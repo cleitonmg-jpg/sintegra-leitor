@@ -249,6 +249,24 @@ export default function Home() {
       });
   }, [filteredNFs]);
 
+  const cupomsByDate = useMemo(() => {
+    if (!data) return [];
+    const groups = new Map<string, typeof data.records61>();
+    for (const c of data.records61) {
+      const list = groups.get(c.date) || [];
+      list.push(c);
+      groups.set(c.date, list);
+    }
+    const toISO = (d: string) => d.split("/").reverse().join("-");
+    return Array.from(groups.entries())
+      .map(([date, records]) => ({
+        date,
+        records,
+        total: records.reduce((s, c) => s + c.valorTotal, 0),
+      }))
+      .sort((a, b) => toISO(a.date).localeCompare(toISO(b.date)));
+  }, [data]);
+
   const cfopSummary = useMemo(() => {
     if (!data) return { entradas: [] as CfopGroup[], saidas: [] as CfopGroup[] };
     const entradasMap = new Map<string, CfopGroup>();
@@ -671,39 +689,74 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="rounded-md border overflow-auto">
-                <table className="w-full text-xs">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-semibold">Data</th>
-                      <th className="px-3 py-2 text-left font-semibold">Modelo</th>
-                      <th className="px-3 py-2 text-left font-semibold">Série NFC-e</th>
-                      <th className="px-3 py-2 text-left font-semibold">Nº Cupom</th>
-                      <th className="px-3 py-2 text-right font-semibold">Valor Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.records61.map((cup, i) => (
-                      <tr key={cup.id} className={`border-t ${i % 2 === 0 ? "" : "bg-muted/20"}`}>
-                        <td className="px-3 py-1.5 font-mono">{cup.date}</td>
-                        <td className="px-3 py-1.5">{cup.modelo}</td>
-                        <td className="px-3 py-1.5 font-mono">{cup.numOrdemECF}</td>
-                        <td className="px-3 py-1.5 font-mono">{cup.numIniCupom}</td>
-                        <td className="px-3 py-1.5 text-right font-semibold">
-                          {cup.valorTotal > 0 ? `R$ ${fmtBRL(cup.valorTotal)}` : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="bg-muted/40 border-t">
-                    <tr>
-                      <td colSpan={4} className="px-3 py-2 font-semibold text-right">Total:</td>
-                      <td className="px-3 py-2 font-bold text-right text-primary">
-                        R$ {fmtBRL(data.records61.reduce((s, c) => s + c.valorTotal, 0))}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
+              <div className="rounded-md border overflow-hidden">
+                {/* cabeçalho fixo */}
+                <div className="grid text-xs font-semibold bg-primary text-primary-foreground px-4 py-2"
+                  style={{ gridTemplateColumns: "1fr 80px 120px 80px" }}>
+                  <span>Data / Cupons</span>
+                  <span className="text-center">Qtd</span>
+                  <span className="text-right">Total do Dia</span>
+                  <span />
+                </div>
+
+                <Accordion type="multiple" className="divide-y">
+                  {cupomsByDate.map((group) => (
+                    <AccordionItem key={group.date} value={group.date} className="border-0">
+                      <AccordionTrigger className="px-4 py-2 hover:bg-muted/40 hover:no-underline [&>svg]:shrink-0">
+                        <div className="grid w-full text-xs items-center"
+                          style={{ gridTemplateColumns: "1fr 80px 120px" }}>
+                          <span className="font-semibold text-left">{group.date}</span>
+                          <span className="text-center text-muted-foreground">{group.records.length}</span>
+                          <span className="text-right font-bold text-primary">R$ {fmtBRL(group.total)}</span>
+                        </div>
+                      </AccordionTrigger>
+
+                      <AccordionContent className="pb-0">
+                        <div className="overflow-auto bg-muted/20">
+                          <table className="w-full text-xs">
+                            <thead className="bg-muted/60">
+                              <tr>
+                                <th className="px-3 py-1.5 text-left font-semibold">Modelo</th>
+                                <th className="px-3 py-1.5 text-left font-semibold">Série NFC-e</th>
+                                <th className="px-3 py-1.5 text-left font-semibold">Nº Cupom</th>
+                                <th className="px-3 py-1.5 text-right font-semibold">Valor Total</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {group.records.map((cup, i) => (
+                                <tr key={cup.id} className={`border-t ${i % 2 === 0 ? "" : "bg-muted/20"}`}>
+                                  <td className="px-3 py-1.5">{cup.modelo}</td>
+                                  <td className="px-3 py-1.5 font-mono">{cup.numOrdemECF}</td>
+                                  <td className="px-3 py-1.5 font-mono">{cup.numIniCupom}</td>
+                                  <td className="px-3 py-1.5 text-right font-semibold">
+                                    {cup.valorTotal > 0 ? `R$ ${fmtBRL(cup.valorTotal)}` : "—"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                            <tfoot className="bg-muted/50 border-t">
+                              <tr>
+                                <td colSpan={3} className="px-3 py-1.5 font-semibold text-right text-xs">Subtotal:</td>
+                                <td className="px-3 py-1.5 text-right font-bold text-primary text-xs">
+                                  R$ {fmtBRL(group.total)}
+                                </td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+
+                {/* rodapé geral */}
+                <div className="grid text-xs font-bold bg-muted/60 border-t px-4 py-2 text-primary"
+                  style={{ gridTemplateColumns: "1fr 80px 120px 80px" }}>
+                  <span>TOTAL GERAL ({cupomsByDate.length} dias)</span>
+                  <span className="text-center text-foreground">{data.records61.length}</span>
+                  <span className="text-right">R$ {fmtBRL(data.records61.reduce((s, c) => s + c.valorTotal, 0))}</span>
+                  <span />
+                </div>
               </div>
             </div>
           </TabsContent>
