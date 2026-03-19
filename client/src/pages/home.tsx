@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   Dialog,
   DialogContent,
@@ -225,6 +226,28 @@ export default function Home() {
       return true;
     });
   }, [data, nfFilter]);
+
+  const nfsByDate = useMemo(() => {
+    const groups = new Map<string, typeof filteredNFs>();
+    for (const nf of filteredNFs) {
+      const list = groups.get(nf.date) || [];
+      list.push(nf);
+      groups.set(nf.date, list);
+    }
+    return Array.from(groups.entries())
+      .map(([date, records]) => ({
+        date,
+        records,
+        total: records.reduce((s, n) => s + n.valorTotal, 0),
+        totalICMS: records.reduce((s, n) => s + n.valorICMS, 0),
+        canceladas: records.filter(n => n.cancelada).length,
+      }))
+      .sort((a, b) => {
+        // ordenar por data DD/MM/YYYY
+        const toISO = (d: string) => d.split("/").reverse().join("-");
+        return toISO(a.date).localeCompare(toISO(b.date));
+      });
+  }, [filteredNFs]);
 
   const cfopSummary = useMemo(() => {
     if (!data) return { entradas: [] as CfopGroup[], saidas: [] as CfopGroup[] };
@@ -503,80 +526,124 @@ export default function Home() {
               </div>
 
               {/* Tabela NFs */}
-              <div className="rounded-md border overflow-auto">
-                <table className="w-full text-xs">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-semibold">Data</th>
-                      <th className="px-3 py-2 text-left font-semibold">Modelo</th>
-                      <th className="px-3 py-2 text-left font-semibold">Série</th>
-                      <th className="px-3 py-2 text-left font-semibold">Nº NF</th>
-                      <th className="px-3 py-2 text-left font-semibold">CFOP</th>
-                      <th className="px-3 py-2 text-right font-semibold">Valor Total</th>
-                      <th className="px-3 py-2 text-right font-semibold">Base Cálc.</th>
-                      <th className="px-3 py-2 text-right font-semibold">Vl. ICMS</th>
-                      <th className="px-3 py-2 text-right font-semibold">Alíq. %</th>
-                      <th className="px-3 py-2 text-center font-semibold">Situação</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredNFs.map((nf, i) => (
-                      <tr key={nf.id} className={`border-t ${i % 2 === 0 ? "" : "bg-muted/20"} ${nf.cancelada ? "opacity-50" : ""}`}>
-                        <td className="px-3 py-1.5 font-mono">{nf.date}</td>
-                        <td className="px-3 py-1.5">{nf.modelo}</td>
-                        <td className="px-3 py-1.5">{nf.serie}</td>
-                        <td className="px-3 py-1.5 font-mono">{nf.numero}</td>
-                        <td className="px-3 py-1.5">
-                          <Badge variant="outline" className="font-mono text-[10px] px-1.5">{nf.cfop}</Badge>
-                        </td>
-                        <td className="px-3 py-1.5 text-right font-semibold">
-                          R$ {fmtBRL(nf.valorTotal)}
-                        </td>
-                        <td className="px-3 py-1.5 text-right text-muted-foreground">
-                          {nf.baseCalculo > 0 ? `R$ ${fmtBRL(nf.baseCalculo)}` : "—"}
-                        </td>
-                        <td className="px-3 py-1.5 text-right text-muted-foreground">
-                          {nf.valorICMS > 0 ? `R$ ${fmtBRL(nf.valorICMS)}` : "—"}
-                        </td>
-                        <td className="px-3 py-1.5 text-right text-muted-foreground">
-                          {nf.aliquota > 0 ? `${fmtBRL(nf.aliquota)}%` : "—"}
-                        </td>
-                        <td className="px-3 py-1.5 text-center">
-                          {nf.cancelada ? (
-                            <Badge variant="destructive" className="text-[10px] px-1.5">Cancelada</Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-[10px] px-1.5">Normal</Badge>
-                          )}
-                        </td>
-                      </tr>
+              {filteredNFs.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground text-sm">Nenhuma nota encontrada.</div>
+              ) : (
+                <div className="rounded-md border overflow-hidden">
+                  {/* cabeçalho fixo */}
+                  <div className="grid text-xs font-semibold bg-primary text-primary-foreground px-4 py-2"
+                    style={{ gridTemplateColumns: "1fr 80px 80px 80px 120px 80px" }}>
+                    <span>Data / Notas</span>
+                    <span className="text-center">Qtd NFs</span>
+                    <span className="text-center">Canceladas</span>
+                    <span className="text-right">Vl. ICMS</span>
+                    <span className="text-right">Total do Dia</span>
+                    <span />
+                  </div>
+
+                  <Accordion type="multiple" className="divide-y">
+                    {nfsByDate.map((group) => (
+                      <AccordionItem key={group.date} value={group.date} className="border-0">
+                        <AccordionTrigger className="px-4 py-2 hover:bg-muted/40 hover:no-underline [&>svg]:shrink-0">
+                          <div className="grid w-full text-xs items-center"
+                            style={{ gridTemplateColumns: "1fr 80px 80px 80px 120px" }}>
+                            <span className="font-semibold text-left">{group.date}</span>
+                            <span className="text-center text-muted-foreground">{group.records.length}</span>
+                            <span className="text-center">
+                              {group.canceladas > 0
+                                ? <Badge variant="destructive" className="text-[10px] px-1.5">{group.canceladas}</Badge>
+                                : <span className="text-muted-foreground">—</span>}
+                            </span>
+                            <span className="text-right text-muted-foreground">
+                              {group.totalICMS > 0 ? `R$ ${fmtBRL(group.totalICMS)}` : "—"}
+                            </span>
+                            <span className="text-right font-bold text-primary">
+                              R$ {fmtBRL(group.total)}
+                            </span>
+                          </div>
+                        </AccordionTrigger>
+
+                        <AccordionContent className="pb-0">
+                          <div className="overflow-auto bg-muted/20">
+                            <table className="w-full text-xs">
+                              <thead className="bg-muted/60">
+                                <tr>
+                                  <th className="px-3 py-1.5 text-left font-semibold">Modelo</th>
+                                  <th className="px-3 py-1.5 text-left font-semibold">Série</th>
+                                  <th className="px-3 py-1.5 text-left font-semibold">Nº NF</th>
+                                  <th className="px-3 py-1.5 text-left font-semibold">CFOP</th>
+                                  <th className="px-3 py-1.5 text-right font-semibold">Valor Total</th>
+                                  <th className="px-3 py-1.5 text-right font-semibold">Base Cálc.</th>
+                                  <th className="px-3 py-1.5 text-right font-semibold">Vl. ICMS</th>
+                                  <th className="px-3 py-1.5 text-right font-semibold">Alíq. %</th>
+                                  <th className="px-3 py-1.5 text-center font-semibold">Situação</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {group.records.map((nf, i) => (
+                                  <tr key={nf.id} className={`border-t ${i % 2 === 0 ? "" : "bg-muted/20"} ${nf.cancelada ? "opacity-50" : ""}`}>
+                                    <td className="px-3 py-1.5">{nf.modelo}</td>
+                                    <td className="px-3 py-1.5">{nf.serie}</td>
+                                    <td className="px-3 py-1.5 font-mono">{nf.numero}</td>
+                                    <td className="px-3 py-1.5">
+                                      <Badge variant="outline" className="font-mono text-[10px] px-1.5">{nf.cfop}</Badge>
+                                    </td>
+                                    <td className="px-3 py-1.5 text-right font-semibold">R$ {fmtBRL(nf.valorTotal)}</td>
+                                    <td className="px-3 py-1.5 text-right text-muted-foreground">
+                                      {nf.baseCalculo > 0 ? `R$ ${fmtBRL(nf.baseCalculo)}` : "—"}
+                                    </td>
+                                    <td className="px-3 py-1.5 text-right text-muted-foreground">
+                                      {nf.valorICMS > 0 ? `R$ ${fmtBRL(nf.valorICMS)}` : "—"}
+                                    </td>
+                                    <td className="px-3 py-1.5 text-right text-muted-foreground">
+                                      {nf.aliquota > 0 ? `${fmtBRL(nf.aliquota)}%` : "—"}
+                                    </td>
+                                    <td className="px-3 py-1.5 text-center">
+                                      {nf.cancelada
+                                        ? <Badge variant="destructive" className="text-[10px] px-1.5">Cancelada</Badge>
+                                        : <Badge variant="secondary" className="text-[10px] px-1.5">Normal</Badge>}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                              <tfoot className="bg-muted/50 border-t">
+                                <tr>
+                                  <td colSpan={4} className="px-3 py-1.5 font-semibold text-right text-xs">Subtotal:</td>
+                                  <td className="px-3 py-1.5 text-right font-bold text-primary text-xs">
+                                    R$ {fmtBRL(group.total)}
+                                  </td>
+                                  <td className="px-3 py-1.5 text-right font-semibold text-xs">
+                                    R$ {fmtBRL(group.records.reduce((s, n) => s + n.baseCalculo, 0))}
+                                  </td>
+                                  <td className="px-3 py-1.5 text-right font-semibold text-xs">
+                                    R$ {fmtBRL(group.totalICMS)}
+                                  </td>
+                                  <td colSpan={2} />
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
                     ))}
-                    {filteredNFs.length === 0 && (
-                      <tr>
-                        <td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">
-                          Nenhuma nota encontrada.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                  {filteredNFs.length > 0 && (
-                    <tfoot className="bg-muted/40 border-t">
-                      <tr>
-                        <td colSpan={5} className="px-3 py-2 font-semibold text-right">Total:</td>
-                        <td className="px-3 py-2 font-bold text-right text-primary">
-                          R$ {fmtBRL(filteredNFs.reduce((s, n) => s + n.valorTotal, 0))}
-                        </td>
-                        <td className="px-3 py-2 font-bold text-right">
-                          R$ {fmtBRL(filteredNFs.reduce((s, n) => s + n.baseCalculo, 0))}
-                        </td>
-                        <td className="px-3 py-2 font-bold text-right">
-                          R$ {fmtBRL(filteredNFs.reduce((s, n) => s + n.valorICMS, 0))}
-                        </td>
-                        <td colSpan={2} />
-                      </tr>
-                    </tfoot>
-                  )}
-                </table>
-              </div>
+                  </Accordion>
+
+                  {/* rodapé geral */}
+                  <div className="grid text-xs font-bold bg-muted/60 border-t px-4 py-2 text-primary"
+                    style={{ gridTemplateColumns: "1fr 80px 80px 80px 120px 80px" }}>
+                    <span>TOTAL GERAL ({nfsByDate.length} dias)</span>
+                    <span className="text-center text-foreground">{filteredNFs.length}</span>
+                    <span />
+                    <span className="text-right text-foreground">
+                      R$ {fmtBRL(filteredNFs.reduce((s, n) => s + n.valorICMS, 0))}
+                    </span>
+                    <span className="text-right">
+                      R$ {fmtBRL(filteredNFs.reduce((s, n) => s + n.valorTotal, 0))}
+                    </span>
+                    <span />
+                  </div>
+                </div>
+              )}
             </div>
           </TabsContent>
         )}
