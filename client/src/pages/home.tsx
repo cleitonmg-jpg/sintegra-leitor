@@ -499,6 +499,9 @@ export default function Home() {
                       <th className="px-3 py-2 text-left font-semibold">Nº NF</th>
                       <th className="px-3 py-2 text-left font-semibold">CFOP</th>
                       <th className="px-3 py-2 text-right font-semibold">Valor Total</th>
+                      <th className="px-3 py-2 text-right font-semibold">Base Cálc.</th>
+                      <th className="px-3 py-2 text-right font-semibold">Vl. ICMS</th>
+                      <th className="px-3 py-2 text-right font-semibold">Alíq. %</th>
                       <th className="px-3 py-2 text-center font-semibold">Situação</th>
                     </tr>
                   </thead>
@@ -515,6 +518,15 @@ export default function Home() {
                         <td className="px-3 py-1.5 text-right font-semibold">
                           R$ {fmtBRL(nf.valorTotal)}
                         </td>
+                        <td className="px-3 py-1.5 text-right text-muted-foreground">
+                          {nf.baseCalculo > 0 ? `R$ ${fmtBRL(nf.baseCalculo)}` : "—"}
+                        </td>
+                        <td className="px-3 py-1.5 text-right text-muted-foreground">
+                          {nf.valorICMS > 0 ? `R$ ${fmtBRL(nf.valorICMS)}` : "—"}
+                        </td>
+                        <td className="px-3 py-1.5 text-right text-muted-foreground">
+                          {nf.aliquota > 0 ? `${fmtBRL(nf.aliquota)}%` : "—"}
+                        </td>
                         <td className="px-3 py-1.5 text-center">
                           {nf.cancelada ? (
                             <Badge variant="destructive" className="text-[10px] px-1.5">Cancelada</Badge>
@@ -526,7 +538,7 @@ export default function Home() {
                     ))}
                     {filteredNFs.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
+                        <td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">
                           Nenhuma nota encontrada.
                         </td>
                       </tr>
@@ -539,7 +551,13 @@ export default function Home() {
                         <td className="px-3 py-2 font-bold text-right text-primary">
                           R$ {fmtBRL(filteredNFs.reduce((s, n) => s + n.valorTotal, 0))}
                         </td>
-                        <td />
+                        <td className="px-3 py-2 font-bold text-right">
+                          R$ {fmtBRL(filteredNFs.reduce((s, n) => s + n.baseCalculo, 0))}
+                        </td>
+                        <td className="px-3 py-2 font-bold text-right">
+                          R$ {fmtBRL(filteredNFs.reduce((s, n) => s + n.valorICMS, 0))}
+                        </td>
+                        <td colSpan={2} />
                       </tr>
                     </tfoot>
                   )}
@@ -567,8 +585,7 @@ export default function Home() {
                       <th className="px-3 py-2 text-left font-semibold">Data</th>
                       <th className="px-3 py-2 text-left font-semibold">Modelo</th>
                       <th className="px-3 py-2 text-left font-semibold">Série (ECF)</th>
-                      <th className="px-3 py-2 text-left font-semibold">Cupom Ini</th>
-                      <th className="px-3 py-2 text-left font-semibold">Cupom Fin</th>
+                      <th className="px-3 py-2 text-left font-semibold">Nº Cupom</th>
                       <th className="px-3 py-2 text-right font-semibold">Valor Total</th>
                     </tr>
                   </thead>
@@ -579,16 +596,15 @@ export default function Home() {
                         <td className="px-3 py-1.5">{cup.modelo}</td>
                         <td className="px-3 py-1.5 font-mono">{cup.numOrdemECF}</td>
                         <td className="px-3 py-1.5 font-mono">{cup.numIniCupom}</td>
-                        <td className="px-3 py-1.5 font-mono">{cup.numFinCupom}</td>
                         <td className="px-3 py-1.5 text-right font-semibold">
-                          R$ {fmtBRL(cup.valorTotal)}
+                          {cup.valorTotal > 0 ? `R$ ${fmtBRL(cup.valorTotal)}` : "—"}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot className="bg-muted/40 border-t">
                     <tr>
-                      <td colSpan={5} className="px-3 py-2 font-semibold text-right">Total:</td>
+                      <td colSpan={4} className="px-3 py-2 font-semibold text-right">Total:</td>
                       <td className="px-3 py-2 font-bold text-right text-primary">
                         R$ {fmtBRL(data.records61.reduce((s, c) => s + c.valorTotal, 0))}
                       </td>

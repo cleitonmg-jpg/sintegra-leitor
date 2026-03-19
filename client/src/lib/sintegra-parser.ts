@@ -140,8 +140,8 @@ export function parseSintegra(content: string): SintegraData {
       const cfop = line.substring(51, 55).trim();
       const emitente = line.substring(55, 56).trim();
       const valorTotal = parseValue(line.substring(56, 69));
-      const baseCalculo = parseValue(line.substring(69, 82));
-      const valorICMS = parseValue(line.substring(82, 95));
+      const baseCalculo = parseValue(line.substring(70, 83));
+      const valorICMS = parseValue(line.substring(83, 95));
       const isentaNT = parseValue(line.substring(95, 108));
       const outras = parseValue(line.substring(108, 121));
       const aliquota = parseValue(line.substring(121, 125));
@@ -171,28 +171,28 @@ export function parseSintegra(content: string): SintegraData {
     }
 
     // Registro 61 - Cupom Fiscal ECF/PDV
-    // Layout (0-indexed):
-    // [0:2]   tipo
-    // [2:16]  cnpj (14)
-    // [16:30] ie (14)
-    // [30:38] data AAAAMMDD (8)
-    // [38:44] num mapa resumo ECF (6)
-    // [44:46] modelo (2)
-    // [46:50] num ordem ECF / serie (4)
-    // [50:56] num inicial cupom (6)
-    // [56:62] num final cupom (6)
-    // [62:75] valor total (13)
-    if (recordType === "61" && line.length >= 75) {
+    // Layout (1-indexed, corrigido):
+    // 1-2:   tipo
+    // 3-16:  cnpj (14)
+    // 17-30: ie (14)
+    // 31-38: data AAAAMMDD (8)
+    // 39-40: UF (2)
+    // 41-43: serie ECF (3)
+    // 44-45: modelo (2)
+    // 46-51: num inicial cupom (6)
+    // 52-57: num final cupom (6)
+    // 58-70: valor total (13)
+    if (recordType === "61" && line.length >= 70) {
       const cupCnpj = line.substring(2, 16).trim();
       const ie = line.substring(16, 30).trim();
       const rawDate = line.substring(30, 38).trim();
       const date = formatDate(rawDate);
-      const numMapaResumo = line.substring(38, 44).trim();
-      const modelo = line.substring(44, 46).trim();
-      const numOrdemECF = line.substring(46, 50).trim();
-      const numIniCupom = line.substring(50, 56).trim();
-      const numFinCupom = line.substring(56, 62).trim();
-      const valorTotal = parseValue(line.substring(62, 75));
+      const numMapaResumo = line.substring(38, 40).trim();
+      const modelo = line.substring(43, 45).trim();
+      const numOrdemECF = line.substring(40, 43).trim(); // serie ECF
+      const numIniCupom = line.substring(45, 51).trim();
+      const numFinCupom = line.substring(51, 57).trim();
+      const valorTotal = parseValue(line.substring(57, 70));
 
       records61.push({
         id: `61-${rawDate}-${numOrdemECF}-${numIniCupom}-${Math.random().toString(36).substr(2, 6)}`,
