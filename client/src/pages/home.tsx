@@ -584,7 +584,7 @@ export default function Home() {
                     <tr>
                       <th className="px-3 py-2 text-left font-semibold">Data</th>
                       <th className="px-3 py-2 text-left font-semibold">Modelo</th>
-                      <th className="px-3 py-2 text-left font-semibold">Série (ECF)</th>
+                      <th className="px-3 py-2 text-left font-semibold">Série NFC-e</th>
                       <th className="px-3 py-2 text-left font-semibold">Nº Cupom</th>
                       <th className="px-3 py-2 text-right font-semibold">Valor Total</th>
                     </tr>

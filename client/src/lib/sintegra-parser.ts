@@ -170,36 +170,34 @@ export function parseSintegra(content: string): SintegraData {
       });
     }
 
-    // Registro 61 - Cupom Fiscal ECF/PDV
-    // Layout (1-indexed, corrigido):
-    // 1-2:   tipo
-    // 3-16:  cnpj (14)
-    // 17-30: ie (14)
-    // 31-38: data AAAAMMDD (8)
-    // 39-40: UF (2)
-    // 41-43: serie ECF (3)
-    // 44-45: modelo (2)
-    // 46-51: num inicial cupom (6)
-    // 52-57: num final cupom (6)
-    // 58-70: valor total (13)
+    // Registro 61 - Cupom Fiscal NFC-e
+    // Layout (1-indexed, inclusive → substring(A-1, B)):
+    // 1-2:   tipo        (2)  substring(0, 2)
+    // 3-16:  cnpj        (14) substring(2, 16)
+    // 17-30: ie          (14) substring(16, 30)
+    // 31-38: data        (8)  substring(30, 38)
+    // 39-40: modelo      (2)  substring(38, 40)  = 40-39+1 = 2 chars
+    // 41-44: serie NFC-e (4)  substring(40, 44)  = 44-41+1 = 4 chars
+    // 46-51: num cupom   (6)  substring(45, 51)  = 51-46+1 = 6 chars
+    // 52-57: cupom final (6)  substring(51, 57)  (não exibido)
+    // 58-70: valor total (13) substring(57, 70)  = 70-58+1 = 13 chars
     if (recordType === "61" && line.length >= 70) {
       const cupCnpj = line.substring(2, 16).trim();
       const ie = line.substring(16, 30).trim();
       const rawDate = line.substring(30, 38).trim();
       const date = formatDate(rawDate);
-      const numMapaResumo = line.substring(38, 40).trim();
-      const modelo = line.substring(43, 45).trim();
-      const numOrdemECF = line.substring(40, 43).trim(); // serie ECF
-      const numIniCupom = line.substring(45, 51).trim();
-      const numFinCupom = line.substring(51, 57).trim();
-      const valorTotal = parseValue(line.substring(57, 70));
+      const modelo = line.substring(38, 40).trim();        // 39-40
+      const numOrdemECF = line.substring(40, 44).trim();   // 41-44 serie NFC-e (4 chars)
+      const numIniCupom = line.substring(45, 51).trim();   // 46-51
+      const numFinCupom = line.substring(51, 57).trim();   // 52-57 (não exibido)
+      const valorTotal = parseValue(line.substring(57, 70)); // 58-70
 
       records61.push({
         id: `61-${rawDate}-${numOrdemECF}-${numIniCupom}-${Math.random().toString(36).substr(2, 6)}`,
         cnpj: cupCnpj,
         ie,
         date,
-        numMapaResumo,
+        numMapaResumo: "",
         modelo,
         numOrdemECF,
         numIniCupom,
