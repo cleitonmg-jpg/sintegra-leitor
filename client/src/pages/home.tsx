@@ -314,9 +314,9 @@ export default function Home() {
                   Leitor SINTEGRA <span className="text-[10px] font-normal opacity-70">v{APP_VERSION}</span>
                   <span className="text-[10px] font-normal opacity-70 ml-2">Uploads: {uploadCount}</span>
                 </h1>
-                <p className="text-xs text-muted-foreground" data-testid="text-company-ref">
-                  V9 INFORMATICA - (37) 4141-0341
-                </p>
+                <a href="tel:+553741410341" className="inline-flex items-center gap-1.5 mt-0.5 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold tracking-wide hover:opacity-90 transition-opacity" data-testid="text-company-ref">
+                  <span className="text-[9px]">💻</span> V9 INFORMATICA · (37) 4141-0341
+                </a>
               </div>
             </div>
           </div>
@@ -436,9 +436,9 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-[10px] text-muted-foreground italic hidden sm:block">
-                V9 INFORMATICA - (37) 4141-0341
-              </p>
+              <a href="tel:+553741410341" className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold tracking-wide hover:opacity-90 transition-opacity">
+                <span className="text-[9px]">💻</span> V9 INFORMATICA · (37) 4141-0341
+              </a>
               {data.items.length > 0 && (
                 <>
                   <Button variant="outline" size="sm" onClick={() => exportToPDF(data.items, data.companyInfo, data.inventoryDate)} data-testid="button-export-pdf">
