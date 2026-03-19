@@ -1,7 +1,13 @@
 import { APP_VERSION } from "@shared/schema";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { parseSintegra } from "@/lib/sintegra-parser";
-import { exportToPDF, exportToExcel } from "@/lib/export-utils";
+import {
+  exportToPDF, exportToExcel,
+  exportNFsToPDF, exportNFsToExcel,
+  exportCuponsToPDF, exportCuponsToExcel,
+  exportCfopToPDF, exportCfopToExcel,
+  type CfopGroup,
+} from "@/lib/export-utils";
 import type { InventoryItem, CompanyInfo, SintegraData, Record50, Record61 } from "@shared/schema";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -221,9 +227,9 @@ export default function Home() {
   }, [data, nfFilter]);
 
   const cfopSummary = useMemo(() => {
-    if (!data) return { entradas: [], saidas: [] };
-    const entradasMap = new Map<string, { cfop: string; count: number; valorTotal: number }>();
-    const saidasMap = new Map<string, { cfop: string; count: number; valorTotal: number }>();
+    if (!data) return { entradas: [] as CfopGroup[], saidas: [] as CfopGroup[] };
+    const entradasMap = new Map<string, CfopGroup>();
+    const saidasMap = new Map<string, CfopGroup>();
 
     for (const nf of data.records50) {
       const cfop = nf.cfop;
@@ -480,11 +486,19 @@ export default function Home() {
                     Entradas ({data.records50.filter(n => n.emitente === "T").length})
                   </Button>
                 </div>
-                <div className="flex items-center gap-3 text-sm">
+                <div className="flex items-center gap-3 text-sm flex-wrap">
                   <span className="text-muted-foreground">{filteredNFs.length} notas</span>
                   <span className="font-semibold text-primary">
                     Total: R$ {fmtBRL(filteredNFs.reduce((s, n) => s + n.valorTotal, 0))}
                   </span>
+                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1"
+                    onClick={() => exportNFsToPDF(filteredNFs, nfFilter === "saidas" ? "Saidas" : nfFilter === "entradas" ? "Entradas" : "Todas", data.companyInfo)}>
+                    <Download className="w-3 h-3" />PDF
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1"
+                    onClick={() => exportNFsToExcel(filteredNFs, nfFilter === "saidas" ? "Saidas" : nfFilter === "entradas" ? "Entradas" : "Todas", data.companyInfo)}>
+                    <FileSpreadsheet className="w-3 h-3" />Excel
+                  </Button>
                 </div>
               </div>
 
@@ -571,11 +585,23 @@ export default function Home() {
         {data.records61.length > 0 && (
           <TabsContent value="cupons" className="flex-1 mt-0">
             <div className="max-w-7xl mx-auto px-4 py-3">
-              <div className="flex items-center justify-between gap-4 mb-3">
-                <span className="text-sm text-muted-foreground">{data.records61.length} registros de cupom</span>
-                <span className="text-sm font-semibold text-primary">
-                  Total: R$ {fmtBRL(data.records61.reduce((s, c) => s + c.valorTotal, 0))}
-                </span>
+              <div className="flex items-center justify-between gap-4 mb-3 flex-wrap">
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="text-muted-foreground">{data.records61.length} registros de cupom</span>
+                  <span className="font-semibold text-primary">
+                    Total: R$ {fmtBRL(data.records61.reduce((s, c) => s + c.valorTotal, 0))}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1"
+                    onClick={() => exportCuponsToPDF(data.records61, data.companyInfo)}>
+                    <Download className="w-3 h-3" />PDF
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1"
+                    onClick={() => exportCuponsToExcel(data.records61, data.companyInfo)}>
+                    <FileSpreadsheet className="w-3 h-3" />Excel
+                  </Button>
+                </div>
               </div>
 
               <div className="rounded-md border overflow-auto">
@@ -620,6 +646,16 @@ export default function Home() {
         {data.records50.length > 0 && (
           <TabsContent value="cfop" className="flex-1 mt-0">
             <div className="max-w-7xl mx-auto px-4 py-4">
+              <div className="flex justify-end gap-2 mb-4">
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1"
+                  onClick={() => exportCfopToPDF(cfopSummary.entradas, cfopSummary.saidas, data.companyInfo)}>
+                  <Download className="w-3 h-3" />PDF
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1"
+                  onClick={() => exportCfopToExcel(cfopSummary.entradas, cfopSummary.saidas, data.companyInfo)}>
+                  <FileSpreadsheet className="w-3 h-3" />Excel
+                </Button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Entradas */}
                 <div>
