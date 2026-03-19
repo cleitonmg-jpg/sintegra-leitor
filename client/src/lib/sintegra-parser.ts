@@ -181,7 +181,7 @@ export function parseSintegra(content: string): SintegraData {
     // 46-51: num cupom   (6)  substring(45, 51)  = 51-46+1 = 6 chars
     // 52-57: cupom final (6)  substring(51, 57)  (não exibido)
     // 58-70: valor total (13) substring(57, 70)  = 70-58+1 = 13 chars
-    if (recordType === "61" && line.length >= 70) {
+    if (recordType === "61" && line.charAt(2) === " " && line.length >= 70) {
       const cupCnpj = line.substring(2, 16).trim();
       const ie = line.substring(16, 30).trim();
       const rawDate = line.substring(30, 38).trim();
